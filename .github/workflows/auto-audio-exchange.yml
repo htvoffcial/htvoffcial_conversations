@@ -5,13 +5,12 @@ on:
     # 日本時間 4:20 は UTC 19:20
     - cron: '20 19 * * *'
   workflow_dispatch:
-    # 手動実行ボタンを有効化
 
 jobs:
   generate-tts:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # 書き込み権限を明示的に付与
+      contents: write
     steps:
       - name: Checkout Conversations Repo
         uses: actions/checkout@v4
@@ -30,36 +29,33 @@ jobs:
           # 1. 元のMarkdownを取得
           curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/DiscussArchive.md > archive.md
           
-          # 2. Pythonでテキスト抽出 (「体操のお兄さん」の次の行を抽出)
+          # 2. Pythonで最新の「体操のお兄さん」セクションを抽出
           TEXT=$(python3 -c "
           import re
-          import sys
           try:
               content = open('archive.md').read()
-              # '体操のお兄さん' を含むリスト項目を探す
-              # 例: - [体操のお兄さん...](...)\n  - (抽出したいテキスト)
-              match = re.search(r'\[体操のお兄さん.*?\]\(.*?\)\s*\n\s*-\s*(.*)', content)
-              if match:
-                  text = match.group(1).strip()
-                  # 不要な文字を除去
+              # 全体から「体操のお兄さん」のリンクと、その次の行の説明文をすべて探す
+              matches = re.findall(r'\[体操のお兄さん.*?\]\(.*?\)\s*\n\s*-\s*(.*)', content)
+              if matches:
+                  # 一番最後（最新）のものを取得
+                  text = matches[-1].strip()
                   text = text.replace('“…”', '').replace('...', '')
                   print(text)
               else:
                   print('今日もお疲れ様！体操のお兄さんだよ。')
-          except Exception as e:
+          except:
               print('今日もお疲れ様！体操のお兄さんだよ。')
           ")
           echo "Target Text: $TEXT"
 
-          # 3. 音声生成 (edge-tts)
-          # today.wav
-          edge-tts --voice ja-JP-KeitaNeural --text \"$TEXT\" --write-media today.wav
+          # 3. 音声生成 (エスケープを削除してシンプルに記述)
+          edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media today.wav
           
-          # アーカイブ用
-          DIR=\"Archives/$(date +%Y-%m)\"
-          mkdir -p \"$DIR\"
-          ARCHIVE_PATH=\"$DIR/$(date +%d).mp3\"
-          cp today.wav \"$ARCHIVE_PATH\"
+          # 4. アーカイブ用ディレクトリ作成とコピー
+          DIR="Archives/$(date +%Y-%m)"
+          mkdir -p "$DIR"
+          ARCHIVE_PATH="$DIR/$(date +%d).mp3"
+          cp today.wav "$ARCHIVE_PATH"
 
       - name: Commit and Push
         run: |
