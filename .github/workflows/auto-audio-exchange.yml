@@ -69,8 +69,8 @@ jobs:
 
       - name: Commit and Push
         run: |
-          git config --global user.name "github-actions[bot]"
+          git config --global user.name "RAdi0Bot♪"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add stream/ latest.mp3 Archives/
+          git add stream/docs latest.mp3 Archives/
           git commit -m "Update HLS stream and archives $(date +%Y-%m-%d)" || echo "No changes to commit"
           git push
