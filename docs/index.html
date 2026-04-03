@@ -68,7 +68,7 @@ function calcSentenceTime(sentence) {
 // README 取得 → DISCUSS 部分抽出
 // ----------------------------
 var scrolledbyuser = false; // ユーザースクロールフラグ
-fetch('https://raw.githubusercontent.com/htvoffcial/htvoffcial/refs/heads/main/README.md')
+fetch('https://cdn.jsdelivr.net/gh/htvoffcial/htvoffcial_conversations@main/docs/stream/playlist.m3u8')
     .then(response => response.text())
     .then(text => {
         const startMarker = '<!-- DISCUSS_COACH_START -->';
