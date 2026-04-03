@@ -38,22 +38,23 @@ jobs:
               match = re.search(pattern, content, re.DOTALL)
               if match:
                   text = match.group(1).strip()
+                  # 不要な装飾を除去
                   text = re.sub(r'#+\s*', '', text)
                   text = text.replace('**', '')
                   print(text)
               else:
-                  print('今日もお疲れ様！')
+                  print('今日もお疲れ様！体操のお兄さんだよ。')
           except:
               print('今日もお疲れ様！')
           ")
           echo "Target Text: $TEXT"
 
-          # 2. 音声生成
-          edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media temp.mp3
+          # 2. 高音質MP3を生成
+          edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media latest.mp3
 
           # 3. ffmpeg で HLS (m3u8) に変換
           mkdir -p stream
-          ffmpeg -y -i temp.mp3 \
+          ffmpeg -y -i latest.mp3 \
             -codec:a aac -b:a 128k \
             -f hls \
             -hls_time 10 \
@@ -61,16 +62,15 @@ jobs:
             -hls_segment_filename "stream/data%03d.ts" \
             stream/playlist.m3u8
 
-          # 4. アーカイブと today.wav の作成
+          # 4. アーカイブ作成
           DIR="Archives/$(date +%Y-%m)"
           mkdir -p "$DIR"
-          cp temp.mp3 "$DIR/$(date +%d).mp3"
-          cp temp.mp3 today.wav
+          cp latest.mp3 "$DIR/$(date +%d).mp3"
 
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add stream/ today.wav Archives/
+          git add stream/ latest.mp3 Archives/
           git commit -m "Update HLS stream and archives $(date +%Y-%m-%d)" || echo "No changes to commit"
           git push
