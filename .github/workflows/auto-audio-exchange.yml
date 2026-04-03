@@ -53,14 +53,14 @@ jobs:
           edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media latest.mp3
 
           # 3. ffmpeg で HLS (m3u8) に変換
-          mkdir -p stream
+          mkdir -p docs/stream
           ffmpeg -y -i latest.mp3 \
             -codec:a aac -b:a 128k \
             -f hls \
             -hls_time 10 \
             -hls_list_size 0 \
-            -hls_segment_filename "site/stream/data%03d.ts" \
-            site/stream/playlist.m3u8
+            -hls_segment_filename "docs/stream/data%03d.ts" \
+            docs/stream/playlist.m3u8
 
           # 4. アーカイブ作成
           DIR="Archives/$(date +%Y-%m)"
