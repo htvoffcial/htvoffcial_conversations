@@ -26,20 +26,23 @@ jobs:
 
       - name: Extract Text and Generate Speech
         run: |
-          # 1. 元のMarkdownを取得
-          curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/DiscussArchive.md > archive.md
+          # 1. htvoffcial/htvoffcial の README.md を取得
+          curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/README.md > readme.md
           
-          # 2. Pythonで最新の「体操のお兄さん」セクションを抽出
+          # 2. コメントタグの間のテキストを抽出
+          # re.DOTALL を使うことで、改行を含む複数行をマッチさせます
           TEXT=$(python3 -c "
           import re
           try:
-              content = open('archive.md').read()
-              # 全体から「体操のお兄さん」のリンクと、その次の行の説明文をすべて探す
-              matches = re.findall(r'\[体操のお兄さん.*?\]\(.*?\)\s*\n\s*-\s*(.*)', content)
-              if matches:
-                  # 一番最後（最新）のものを取得
-                  text = matches[-1].strip()
-                  text = text.replace('“…”', '').replace('...', '')
+              content = open('readme.md').read()
+              # <!-- DISCUSS_COACH_START --> と <!-- DISCUSS_COACH_END --> の間を抽出
+              pattern = r'<!-- DISCUSS_COACH_START -->(.*?)<!-- DISCUSS_COACH_END -->'
+              match = re.search(pattern, content, re.DOTALL)
+              if match:
+                  text = match.group(1).strip()
+                  # Markdownの記号（## や ** など）を読み上げ用に簡易除去
+                  text = re.sub(r'#+\s*', '', text) # 見出し記号
+                  text = text.replace('**', '')    # 太字記号
                   print(text)
               else:
                   print('今日もお疲れ様！体操のお兄さんだよ。')
@@ -48,7 +51,7 @@ jobs:
           ")
           echo "Target Text: $TEXT"
 
-          # 3. 音声生成 (エスケープを削除してシンプルに記述)
+          # 3. 音声生成
           edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media today.wav
           
           # 4. アーカイブ用ディレクトリ作成とコピー
