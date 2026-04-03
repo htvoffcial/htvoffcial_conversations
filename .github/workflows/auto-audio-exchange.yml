@@ -1,1 +1,62 @@
 
+name: Daily Gymnastics Brother TTS
+
+on:
+  schedule:
+    # 日本時間 4:20 は UTC 19:20
+    - cron: '20 19 * * *'
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  generate-tts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Conversations Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install edge-tts
+
+      - name: Extract Text and Generate Speech
+        run: |
+          # 1. 元のMarkdownを取得
+          curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/DiscussArchive.md > archive.md
+          
+          # 2. 最新の日付セクションから「体操のお兄さん」の行を抽出
+          # (直近の ## セクション内のテキストを取得)
+          TEXT=$(python3 -c "
+          import re
+          content = open('archive.md').read()
+          # 最新の##セクションを抽出
+          sections = re.split(r'## \d{4}-\d{2}-\d{2}', content)
+          latest_section = sections[-1] if sections else ''
+          # '体操のお兄さん'を含む箇所の説明文などを抽出
+          match = re.search(r'- \[体操のお兄さん.*?\]\(.*?\)\s*\n\s*- (.*)', latest_section)
+          text = match.group(1) if match else '今日もお疲れ様！体操のお兄さんだよ。'
+          print(text.replace('“…”', ''))
+          ")
+          echo "Target Text: $TEXT"
+
+          # 3. 音声生成 (edge-ttsを使用: nanamiは日本語の自然な女性声、keitaは男性声)
+          # today.wav (リクエスト通り)
+          edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media today.wav
+          
+          # アーカイブ用パス作成
+          mkdir -p Archives/$(date +%Y-%m)
+          ARCHIVE_PATH="Archives/$(date +%Y-%m)/$(date +%d).mp3"
+          # mp3として保存
+          edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media $ARCHIVE_PATH
+
+      - name: Commit and Push
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add today.wav Archives/
+          git commit -m "Add daily speech for $(date +%Y-%m-%d)"
+          git push
