@@ -1,0 +1,21 @@
+<!-- 1. The Audio Element -->
+<audio id="audio" controls></audio>
+
+<!-- 2. Include hls.js -->
+<script src="https://jsdelivr.net"></script>
+
+<!-- 3. Initialization Script -->
+<script>
+  var audio = document.getElementById('audio');
+  var audioSrc = '/stream/playlist.m3u8';
+
+  if (Hls.isSupported()) {
+    var hls = new Hls();
+    hls.loadSource(audioSrc);
+    hls.attachMedia(audio);
+  } 
+  // For Safari, which supports HLS natively
+  else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+    audio.src = audioSrc;
+  }
+</script>
