@@ -67,6 +67,7 @@ function calcSentenceTime(sentence) {
 // ----------------------------
 // README 取得 → DISCUSS 部分抽出
 // ----------------------------
+var scrolledbyuser = false; // ユーザースクロールフラグ
 fetch('https://raw.githubusercontent.com/htvoffcial/htvoffcial/refs/heads/main/README.md')
     .then(response => response.text())
     .then(text => {
@@ -117,7 +118,19 @@ fetch('https://raw.githubusercontent.com/htvoffcial/htvoffcial/refs/heads/main/R
                 if (audio.currentTime < t) {
                     [...contentBox.children].forEach(p => p.classList.remove('nowct'));
                     contentBox.children[i].classList.add('nowct');
+                    // 現在の文が見えるようにスクロール
+                    const pTop = contentBox.children[i].offsetTop;
+                    const pHeight = contentBox.children[i].offsetHeight;
+                    const boxTop = contentBox.scrollTop;
+                    const boxHeight = contentBox.offsetHeight;
+                    if (pTop < boxTop || pTop + pHeight > boxTop + boxHeight) {
+                        contentBox.scrollTo({
+                            top: pTop - boxHeight / 2 + pHeight / 2,
+                            behavior: 'smooth'
+                        });
+                    }
                     break;
+
                 }
             }
         });
@@ -132,6 +145,9 @@ fetch('https://raw.githubusercontent.com/htvoffcial/htvoffcial/refs/heads/main/R
             h11.textContent = 'はるはる Conversations - with 体操のお兄さんラジオ';
         }
     });
+   
+   //初期化
+    window.dispatchEvent(new Event('resize'));
 </script>
 
 
