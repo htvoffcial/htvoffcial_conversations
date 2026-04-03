@@ -53,7 +53,7 @@ jobs:
 
           # 3. ffmpeg で HLS (m3u8) に変換
           mkdir -p stream
-          ffmpeg -i temp.mp3 \
+          ffmpeg -y -i temp.mp3 \
             -codec:a aac -b:a 128k \
             -f hls \
             -hls_time 10 \
@@ -70,4 +70,7 @@ jobs:
       - name: Commit and Push
         run: |
           git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add stream/ today.wav Archives/
+          git commit -m "Update HLS stream and archives $(date +%Y-%m-%d)" || echo "No changes to commit"
+          git push
