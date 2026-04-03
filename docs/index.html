@@ -1,18 +1,192 @@
+<html lang="ja">
+
 <head>
     <title>Discussions体操のお兄さん</title>
     <meta charset="UTF-8">
-    <link href="//cdnjs.cloudflare.com/ajax/libs/video.js/5.19.1/video-js.css" rel="stylesheet">
-    <script src="//cdnjs.cloudflare.com/ajax/libs/video.js/5.19.1/video.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/videojs-contrib-hls/5.5.0/videojs-contrib-hls.js"></script>
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
 </head>
 
 <body>
-    <h1></h1>
-    <h1>Audio</h1>
-    <audio id="content_video" class="video-js vjs-default-skin" preload="none" playsinline controls>
-        <source src="stream/playlist.m3u8" type="application/x-mpegURL">
-    </audio>
+    <header id="header">
+        <h1>はるはる Conversations - with 体操のお兄さんラジオ</h1>
+    </header>
+    <div id="contentbox">
+
+    </div>
+    
+    <div class="audio-container">
+        <audio id="audio-player" controls></audio>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
     <script>
-      var player = videojs('content_video');
-    </script>
+document.addEventListener('DOMContentLoaded', () => {
+    const audio = document.querySelector('#audio-player');
+    const source = '/radio';
+
+    // HLS 読み込み
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(source);
+        hls.attachMedia(audio);
+    } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+        audio.src = source;
+    }
+
+    // Plyr 初期化
+    const player = new Plyr(audio, {
+        controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'settings']
+    });
+});
+
+// スクロールでヘッダー隠す
+window.addEventListener('scroll', () => {
+    const header = document.getElementById('header');
+    header.style.top = window.scrollY > 50 ? '-100px' : '0';
+});
+
+// ----------------------------
+// 文字 → 時間換算（統一関数）
+// ----------------------------
+function calcSentenceTime(sentence) {
+    let t = 0;
+    for (let char of sentence) {
+        if (char.match(/[一-龯]/)) t += 0.3;       // 漢字
+        else if (char.match(/[ぁ-ん]/)) t += 0.2; // ひらがな
+        else if (char.match(/[ァ-ン]/)) t += 0.2; // カタカナ
+        else t += 0.1;                            // その他
+    }
+    return t;
+}
+
+// ----------------------------
+// README 取得 → DISCUSS 部分抽出
+// ----------------------------
+fetch('https://raw.githubusercontent.com/htvoffcial/htvoffcial/refs/heads/main/README.md')
+    .then(response => response.text())
+    .then(text => {
+        const startMarker = '<!-- DISCUSS_COACH_START -->';
+        const endMarker = '<!-- DISCUSS_COACH_END -->';
+        const startIndex = text.indexOf(startMarker) + startMarker.length;
+        const endIndex = text.indexOf(endMarker);
+        const discussContent = text.substring(startIndex, endIndex).trim();
+
+        const contentBox = document.getElementById('contentbox');
+
+        // 文の区切り強化（。！!？? 改行）
+        const sentences = discussContent.split(/(?<=[。！!？?\n])/);
+
+        // 表示（# と * を削除）
+        sentences.forEach(sentence => {
+            const p = document.createElement('p');
+            p.textContent = sentence
+                .trim()
+                .replace(/#/g, '')   // ← 削除
+                .replace(/\*/g, ''); // ← 削除
+            contentBox.appendChild(p);
+        });
+
+        const audio = document.querySelector('#audio-player');
+
+        // ----------------------------
+        // クリック → 再生位置へジャンプ
+        // ----------------------------
+        sentences.forEach((sentence, index) => {
+            const p = contentBox.children[index];
+            p.addEventListener('click', () => {
+                let time = 0;
+                for (let i = 0; i < index; i++) {
+                    time += calcSentenceTime(sentences[i]);
+                }
+                audio.currentTime = time;
+            });
+        });
+
+        // ----------------------------
+        // 再生時間 → 現在の文をハイライト
+        // ----------------------------
+        audio.addEventListener('timeupdate', () => {
+            let t = 0;
+            for (let i = 0; i < sentences.length; i++) {
+                t += calcSentenceTime(sentences[i]);
+                if (audio.currentTime < t) {
+                    [...contentBox.children].forEach(p => p.classList.remove('nowct'));
+                    contentBox.children[i].classList.add('nowct');
+                    break;
+                }
+            }
+        });
+    })
+    .catch(error => console.error('Error fetching README:', error));
+</script>
+
+
+
+    <style>
+        html,body{
+            margin: 0;
+            font-family: ヒラギノ角ゴ Pro, Noto Sans JP, Arial, sans-serif;
+            background-color: #f0f0f0;
+            padding-top:35px;
+            height: 100vh;
+            overflow:hidden;
+        }
+        .audio-container {
+            max-width: 500px;
+            margin: 5px auto;
+            /* Plyrのオーディオ用変数を上書きして色を変えることも可能 */
+            --plyr-color-main: #00b3ff;
+        }
+
+        #header {
+            box-sizing: border-box;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: calc(100% - 40px);
+            margin:20px;
+            background-size: auto auto;
+            background-color: rgba(110, 35, 35, 1);
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 99px, rgba(192, 99, 99, 1) 99px, rgba(192, 99, 99, 1) 131px);
+            color: white;
+            text-align: center;
+            padding: 4px 0;
+            transition: top 0.3s;
+            /* スムーズなアニメーション */
+            z-index: 1000;
+            /* ヘッダーが他の要素の上に表示されるように */
+            border-radius: 5px;
+        }
+        #contentbox{
+            width: calc(100% - 40px);
+            box-sizing: border-box;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: rgb(90, 90, 146);
+            border-radius: 5px;
+            height:70vh;
+            overflow-y: scroll;
+        }
+        #contentbox p{
+            margin: 1em 0;
+            line-height: 1.5em;
+            font-size: 1.2em;
+            color: rgb(170, 174, 203);
+        }
+        #contentbox p.nowct{
+            color: rgb(199, 192, 229);
+            font-weight: bold;
+        }
+        h1{
+            font-size: 1em;
+            margin: 0;
+        }
+    </style>
 </body>
+
+</html>
