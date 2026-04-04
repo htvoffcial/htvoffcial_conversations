@@ -20,7 +20,14 @@
     <div class="audio-container">
         <audio id="audio-player" controls></audio>
     </div>
-
+    <div>
+    <h3>お兄さんへのお便り</h3>
+    <form action="https://github.com/htvoffcial/htvoffcial/discussions/new?category=%E9%9B%91%E8%AB%87" method="get">
+        <input type="text" name="title">
+        <textarea name="body"></textarea>
+        <button>GitHubDiscussionsへ！</button>
+    </form>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
@@ -159,7 +166,7 @@ fetch('/readme.md')
             background-color: #f0f0f0;
             padding-top:35px;
             height: 100dvh;
-            overflow:hidden;
+            /*overflow:hidden;*/
         }
         .audio-container {
             max-width: 500px;
