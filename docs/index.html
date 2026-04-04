@@ -27,7 +27,7 @@
     <script>
 document.addEventListener('DOMContentLoaded', () => {
     const audio = document.querySelector('#audio-player');
-    const source = 'https://cdn.jsdelivr.net/gh/htvoffcial/htvoffcial_conversations@main/docs/stream/playlist.m3u8';
+    const source = '/stream/playlist.m3u8';
 
     // HLS 読み込み
     if (Hls.isSupported()) {
@@ -68,7 +68,7 @@ function calcSentenceTime(sentence) {
 // README 取得 → DISCUSS 部分抽出
 // ----------------------------
 var scrolledbyuser = false; // ユーザースクロールフラグ
-fetch('https://cdn.jsdelivr.net/gh/htvoffcial/htvoffcial@main/README.md')
+fetch('/readme.md')
     .then(response => response.text())
     .then(text => {
         const startMarker = '<!-- DISCUSS_COACH_START -->';
