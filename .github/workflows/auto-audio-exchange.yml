@@ -67,10 +67,14 @@ jobs:
           mkdir -p "$DIR"
           cp latest.mp3 "$DIR/$(date +%d).mp3"
 
+          # 5. docs に README.md をコピーして保存
+          cp readme.md docs/readme.md
+
       - name: Commit and Push
         run: |
           git config --global user.name "RAdi0Bot♪"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/stream latest.mp3 Archives/
-          git commit -m "Update HLS stream and archives $(date +%Y-%m-%d)" || echo "No changes to commit"
+          # docs フォルダ全体、latest.mp3、Archives を追加
+          git add docs/ latest.mp3 Archives/
+          git commit -m "Update HLS stream, archives, and docs/readme.md $(date +%Y-%m-%d)" || echo "No changes to commit"
           git push
