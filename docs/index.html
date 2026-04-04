@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="//accaii.com/harutv/script.js" async></script><noscript><img src="//accaii.com/harutv/script?guid=on"></noscript>
-
+    <div id="analytics-tag-area">
+    </div>
 </head>
 
 <body>
@@ -16,158 +16,259 @@
     <div id="contentbox">
 
     </div>
-    
+
     <div class="audio-container">
         <audio id="audio-player" controls></audio>
     </div>
-    <div>
-    <h3>お兄さんへのお便り</h3>
-    <form action="https://github.com/htvoffcial/htvoffcial/discussions/new?category=%E9%9B%91%E8%AB%87" method="get">
-        <input type="text" name="title">
-        <textarea name="body"></textarea>
-        <button>GitHubDiscussionsへ！</button>
-    </form>
+    <div class="oniisan-form">
+        <h3>お兄さんへのお便り</h3>
+        <p style="background-color: #fff; padding: 10px; border-radius: 5px;font-size: small;">
+            <mark>はるはる体操のお兄さんラジオ</mark>への質問やメッセージがあれば、ぜひお送りください！
+            <br>
+            <span style="color:rgb(9, 84, 113);">◼︎ 送信方法</span>
+            <br>
+            1.このサイトのフォームにタイトルと内容を入力<br>
+            2.「GitHub Discussionsへ！」ボタンをクリック
+            3. 入力済みのフォームに飛びますので、内容を確認して投稿！<br>
+            もしくは、GitHub Discussionsの「雑談」カテゴリに直接投稿♪<br>
+            <br>
+            <span style="color:rgb(9, 84, 113);">◼︎ 注意事項</span>
+            <br>
+            ・個人情報や誹謗中傷など、他の人が不快に感じる内容は避けてください。<br>
+            ・お兄さんは長い文が苦手なので、できるだけ簡潔に書いてください。<br>
+            ・投稿には原則、GitHubアカウントが必要です。また、投稿の内容はGitHubのガイドラインや規約が適用されます。<br>
+        </p>
+        <form action="https://github.com/htvoffcial/htvoffcial/discussions/new" method="get">
+            <input type="hidden" name="category" value="雑談">
+            <label>タイトル：</label>
+            <input type="text" name="title" placeholder="例：体操のお兄さんへの質問" required id="title-input">
+            <label>内容：</label>
+            <textarea name="body" placeholder="お兄さんへのメッセージをここに書いてください。" required id="body-input"></textarea>
+            <button>GitHubDiscussionsへ！</button>
+            <p>※入力内容は保持されます</p>
+        </form>
+        <script>
+            //localStorageにkeydownイベントで保存
+            document.querySelector('form').addEventListener('keydown', () => {
+                localStorage.setItem('title', document.getElementById('title-input').value);
+                localStorage.setItem('body', document.getElementById('body-input').value);
+            });
+        </script>
     </div>
+    <div class="end-footer">
+        <select id="text-size" onchange="document.body.style.fontSize = this.value">
+            <option value="16px">標準</option>
+            <option value="18px">大きめ</option>
+            <option value="20px">さらに大きめ</option>
+        </select>
+        <br>
+        <b>免責事項</b>
+        <p>NHKの「たいそうのおにいさん」とは関係ありません。</p>
+        <a style="color:rgb(9, 84, 113);display: flex;align-items: center;text-decoration: none;" href="javascript:void(0)" id="privacychoice">プライバシーに関する選択 <img src="privacycaliforniachoice.png" alt="プライバシーに関する選択アイコン"></a>
+    </div>
+    <div id="privacypopup">
+        <h3>プライバシーに関する選択</h3>
+        <p>このサイトは、ユーザーのプライバシーを尊重し、以下のようなデータ収集を行っています。</p>
+        <ul>
+            <li>アクセス解析ツールによる匿名の訪問者データの収集</li>
+            <li>お問い合わせフォームからのメッセージ内容の保存</li>
+        </ul>
+        <p>このフォームでデータの収集を希望されない場合は拒否することができます。</p>
+        <input type="radio" name="privacy" id="accept" value="accept" checked>
+        <label for="accept">同意する</label><br>
+        <input type="radio" name="privacy" id="reject" value="reject">
+        <label for="reject">同意しない</label><br>
+        <p>これらのデータは、サイトの改善やユーザーサポートのために使用されますが、個人を特定できる情報は収集していません。</p>
+        <button id="closePrivacy">閉じる</button>
+    </div>
+    <script>
+        document.getElementById('privacychoice').addEventListener('click', () => {
+            document.getElementById('privacypopup').style.display = 'block';
+        });
+        document.getElementById('closePrivacy').addEventListener('click', () => {
+            document.getElementById('privacypopup').style.display = 'none';
+        });
+            // プライバシー選択の保存
+        document.querySelectorAll('input[name="privacy"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const choice = document.querySelector('input[name="privacy"]:checked').value;
+                localStorage.setItem('privacyChoice', choice);
+            });
+        });
+        // ページ読み込み時に選択を復元
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedChoice = localStorage.getItem('privacyChoice');
+            if (savedChoice) {
+                document.getElementById(savedChoice).checked = true;
+            }
+            //フォーム内容(title,body)の復元
+            document.getElementById('title-input').value = localStorage.getItem('title') || '';
+            document.getElementById('body-input').value = localStorage.getItem('body') || '';
+        });
+    
+        /*拒否状態でない場合に
+        <script src="//accaii.com/harutv/script.js" async>と、<noscript><img src="//accaii.com/harutv/script?guid=on"></noscript>を設置
+
+    */   
+   // プライバシー選択に応じたスクリプトの読み込み
+        function loadAnalyticsScript() {
+            const choice = localStorage.getItem('privacyChoice');
+            if (choice !== 'reject') {
+                const script = document.createElement('script');
+                script.src = '//accaii.com/harutv/script.js';
+                script.async = true;
+                document.getElementById('analytics-tag-area').appendChild(script);
+
+                const noscript = document.createElement('noscript');
+                noscript.innerHTML = '<img src="//accaii.com/harutv/script?guid=on" alt="Analytics">';
+                document.getElementById('analytics-tag-area').appendChild(noscript);
+            }
+        }
+        loadAnalyticsScript();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
     <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const audio = document.querySelector('#audio-player');
-    const source = '/stream/playlist.m3u8';
+        document.addEventListener('DOMContentLoaded', () => {
+            const audio = document.querySelector('#audio-player');
+            const source = '/stream/playlist.m3u8';
 
-    // HLS 読み込み
-    if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(source);
-        hls.attachMedia(audio);
-    } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
-        audio.src = source;
-    }
+            // HLS 読み込み
+            if (Hls.isSupported()) {
+                const hls = new Hls();
+                hls.loadSource(source);
+                hls.attachMedia(audio);
+            } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+                audio.src = source;
+            }
 
-    // Plyr 初期化
-    const player = new Plyr(audio, {
-        controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'settings']
-    });
-});
-
-// スクロールでヘッダー隠す
-window.addEventListener('scroll', () => {
-    const header = document.getElementById('header');
-    header.style.top = window.scrollY > 50 ? '-100px' : '0';
-});
-
-// ----------------------------
-// 文字 → 時間換算（統一関数）
-// ----------------------------
-function calcSentenceTime(sentence) {
-    let t = 0;
-    for (let char of sentence) {
-        if (char.match(/[一-龯]/)) t += 0.3;       // 漢字
-        else if (char.match(/[ぁ-ん]/)) t += 0.2; // ひらがな
-        else if (char.match(/[ァ-ン]/)) t += 0.2; // カタカナ
-        else t += 0.1;                            // その他
-    }
-    return t;
-}
-
-// ----------------------------
-// README 取得 → DISCUSS 部分抽出
-// ----------------------------
-var scrolledbyuser = false; // ユーザースクロールフラグ
-fetch('/readme.md')
-    .then(response => response.text())
-    .then(text => {
-        const startMarker = '<!-- DISCUSS_COACH_START -->';
-        const endMarker = '<!-- DISCUSS_COACH_END -->';
-        const startIndex = text.indexOf(startMarker) + startMarker.length;
-        const endIndex = text.indexOf(endMarker);
-        const discussContent = text.substring(startIndex, endIndex).trim();
-
-        const contentBox = document.getElementById('contentbox');
-
-        // 文の区切り強化（。！!？? 改行）
-        const sentences = discussContent.split(/(?<=[。！!？?\n])/);
-
-        // 表示（# と * を削除）
-        sentences.forEach(sentence => {
-            const p = document.createElement('p');
-            p.textContent = sentence
-                .trim()
-                .replace(/#/g, '')   // ← 削除
-                .replace(/\*/g, ''); // ← 削除
-            contentBox.appendChild(p);
-        });
-
-        const audio = document.querySelector('#audio-player');
-
-        // ----------------------------
-        // クリック → 再生位置へジャンプ
-        // ----------------------------
-        sentences.forEach((sentence, index) => {
-            const p = contentBox.children[index];
-            p.addEventListener('click', () => {
-                let time = 0;
-                for (let i = 0; i < index; i++) {
-                    time += calcSentenceTime(sentences[i]);
-                }
-                audio.currentTime = time;
+            // Plyr 初期化
+            const player = new Plyr(audio, {
+                controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'settings']
             });
         });
 
-        // ----------------------------
-        // 再生時間 → 現在の文をハイライト
-        // ----------------------------
-        audio.addEventListener('timeupdate', () => {
-            let t = 0;
-            for (let i = 0; i < sentences.length; i++) {
-                t += calcSentenceTime(sentences[i]);
-                if (audio.currentTime < t) {
-                    [...contentBox.children].forEach(p => p.classList.remove('nowct'));
-                    contentBox.children[i].classList.add('nowct');
-                    // 現在の文が見えるようにスクロール
-                    const pTop = contentBox.children[i].offsetTop;
-                    const pHeight = contentBox.children[i].offsetHeight;
-                    const boxTop = contentBox.scrollTop;
-                    const boxHeight = contentBox.offsetHeight;
-                    if (pTop < boxTop || pTop + pHeight > boxTop + boxHeight) {
-                        contentBox.scrollTo({
-                            top: pTop - boxHeight / 2 + pHeight / 2,
-                            behavior: 'smooth'
-                        });
-                    }
-                    break;
+        // スクロールでヘッダー隠す
+        window.addEventListener('scroll', () => {
+            const header = document.getElementById('header');
+            header.style.top = window.scrollY > 50 ? '-100px' : '0';
+        });
 
-                }
+        // ----------------------------
+        // 文字 → 時間換算（統一関数）
+        // ----------------------------
+        function calcSentenceTime(sentence) {
+            let t = 0;
+            for (let char of sentence) {
+                if (char.match(/[一-龯]/)) t += 0.3;       // 漢字
+                else if (char.match(/[ぁ-ん]/)) t += 0.2; // ひらがな
+                else if (char.match(/[ァ-ン]/)) t += 0.2; // カタカナ
+                else t += 0.1;                            // その他
+            }
+            return t;
+        }
+
+        // ----------------------------
+        // README 取得 → DISCUSS 部分抽出
+        // ----------------------------
+        var scrolledbyuser = false; // ユーザースクロールフラグ
+        fetch('/readme.md')
+            .then(response => response.text())
+            .then(text => {
+                const startMarker = '<!-- DISCUSS_COACH_START -->';
+                const endMarker = '<!-- DISCUSS_COACH_END -->';
+                const startIndex = text.indexOf(startMarker) + startMarker.length;
+                const endIndex = text.indexOf(endMarker);
+                const discussContent = text.substring(startIndex, endIndex).trim();
+
+                const contentBox = document.getElementById('contentbox');
+
+                // 文の区切り強化（。！!？? 改行）
+                const sentences = discussContent.split(/(?<=[。！!？?\n])/);
+
+                // 表示（# と * を削除）
+                sentences.forEach(sentence => {
+                    const p = document.createElement('p');
+                    p.textContent = sentence
+                        .trim()
+                        .replace(/#/g, '')   // ← 削除
+                        .replace(/\*/g, ''); // ← 削除
+                    contentBox.appendChild(p);
+                });
+
+                const audio = document.querySelector('#audio-player');
+
+                // ----------------------------
+                // クリック → 再生位置へジャンプ
+                // ----------------------------
+                sentences.forEach((sentence, index) => {
+                    const p = contentBox.children[index];
+                    p.addEventListener('click', () => {
+                        let time = 0;
+                        for (let i = 0; i < index; i++) {
+                            time += calcSentenceTime(sentences[i]);
+                        }
+                        audio.currentTime = time;
+                    });
+                });
+
+                // ----------------------------
+                // 再生時間 → 現在の文をハイライト
+                // ----------------------------
+                audio.addEventListener('timeupdate', () => {
+                    let t = 0;
+                    for (let i = 0; i < sentences.length; i++) {
+                        t += calcSentenceTime(sentences[i]);
+                        if (audio.currentTime < t) {
+                            [...contentBox.children].forEach(p => p.classList.remove('nowct'));
+                            contentBox.children[i].classList.add('nowct');
+                            // 現在の文が見えるようにスクロール
+                            const pTop = contentBox.children[i].offsetTop;
+                            const pHeight = contentBox.children[i].offsetHeight;
+                            const boxTop = contentBox.scrollTop;
+                            const boxHeight = contentBox.offsetHeight;
+                            if (pTop < boxTop || pTop + pHeight > boxTop + boxHeight) {
+                                contentBox.scrollTo({
+                                    top: pTop - boxHeight / 2 + pHeight / 2,
+                                    behavior: 'smooth'
+                                });
+                            }
+                            break;
+
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching README:', error));
+        //スマホの画面サイズならh11の文字列を「はるはる体操のお兄さん」に変更
+        window.addEventListener('resize', () => {
+            const h11 = document.getElementById('h11');
+            if (window.innerWidth < 600) {
+                h11.textContent = 'はるはる体操のお兄さん';
+            } else {
+                h11.textContent = 'はるはる Conversations - with 体操のお兄さんラジオ';
             }
         });
-    })
-    .catch(error => console.error('Error fetching README:', error));
-    //スマホの画面サイズならh11の文字列を「はるはる体操のお兄さん」に変更
-    window.addEventListener('resize', () => {
-        const h11 = document.getElementById('h11');
-        if (window.innerWidth < 600) {
-            h11.textContent = 'はるはる体操のお兄さん';
-        } else {
-            h11.textContent = 'はるはる Conversations - with 体操のお兄さんラジオ';
-        }
-    });
-   
-   //初期化
-    window.dispatchEvent(new Event('resize'));
-</script>
+
+        //初期化
+        window.dispatchEvent(new Event('resize'));
+    </script>
 
 
 
     <style>
-        html,body{
+
+        html,
+        body {
             margin: 0;
             font-family: ヒラギノ角ゴ Pro, Noto Sans JP, Arial, sans-serif;
             background-color: #f0f0f0;
-            padding-top:35px;
+            padding-top: 35px;
             height: 100dvh;
             /*overflow:hidden;*/
         }
+
         .audio-container {
             max-width: 500px;
             margin: 5px auto;
@@ -181,7 +282,7 @@ fetch('/readme.md')
             top: 0;
             left: 0;
             width: calc(100% - 40px);
-            margin:20px;
+            margin: 20px;
             background-size: auto auto;
             background-color: rgba(110, 35, 35, 1);
             background-image: repeating-linear-gradient(45deg, transparent, transparent 99px, rgba(192, 99, 99, 1) 99px, rgba(192, 99, 99, 1) 131px);
@@ -194,29 +295,101 @@ fetch('/readme.md')
             /* ヘッダーが他の要素の上に表示されるように */
             border-radius: 5px;
         }
-        #contentbox{
+
+        #contentbox {
             width: calc(100% - 40px);
             box-sizing: border-box;
             margin: 0 auto;
             padding: 20px;
             background-color: rgb(90, 90, 146);
             border-radius: 5px;
-            height:80dvh;
+            height: 80dvh;
             overflow-y: scroll;
         }
-        #contentbox p{
+
+        #contentbox p {
             margin: 1em 0;
             line-height: 1.5em;
             font-size: 1.2em;
             color: rgb(170, 174, 203);
         }
-        #contentbox p.nowct{
+
+        #contentbox p.nowct {
             color: rgb(199, 192, 229);
             font-weight: bold;
         }
-        h1{
+        .oniisan-form {
+            box-sizing: border-box;
+            margin: 20px auto;
+            width: calc(100% - 40px);
+            padding: 20px;
+            background-color: rgb(151, 151, 250);
+            border-radius: 5px;
+            display:flex;
+            flex-direction: column;
+            gap:3px;
+        }
+        .oniisan-form input, .oniisan-form textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .oniisan-form button {
+            align-self: flex-start;
+            padding: 10px 20px;
+            background-color: #bc92e5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
             font-size: 1em;
+            margin-top: 10px;
+        }
+        .oniisan-form h3{
+            color:rgb(171, 188, 255);
+            font-size:30px !important;
+                margin: 0 0 10px;
+                font-weight: 900;
+                font-family: ヒラギノ角ゴ Stdn, Noto Sans JP ExtraBold, Arial, sans-serif;
+        }
+        h1 {
+            font-size: 1em;
+             margin: 0;
+        }
+        .end-footer {
+            box-sizing: border-box;
+            width: calc(100% - 40px);
+            margin: 0 auto 20px;
+            padding: 10px;
+            background-color: rgb(215, 215, 215);
+            border-radius: 5px;
+            font-size: small;
+
+        }
+        select {
+            overflow: none;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            padding: 5px;
+        }
+        /* プライバシーポップアップ */
+        #privacypopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            line-height: 1.4em;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        #privacypopup h3 {
             margin: 0;
+            color:rgb(9, 84, 113);
         }
     </style>
 </body>
