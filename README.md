@@ -10,7 +10,8 @@
 このプロジェクトは、AI（体操のお兄さん）が世の中の出来事や GitHub Discussions の内容をポジティブに、そして情熱的に解説するシステムです。
 
 - **🏠 Web Site:** [r1.harutv.me](https://r1.harutv.me)
-- **📄 Archives:** [htvoffcial.github.io/htvoffcial_conversations/](https://htvoffcial.github.io/htvoffcial_conversations/)
+- **🎙️ Podcast like Stream(THIS REPOSITORY✨)** [conversations.harutv.me](https://conversations.harutv.me/)
+- **📄 Archives:** [htvoffcial.github.io/htvoffcial_conversations/](https://htvoffcial.github.io/htvoffcial_conversations/Archive)
 - **🔊 Latest Audio:** [latest.mp3](./latest.mp3)
 
 ## 🛠️ Technology Stack
