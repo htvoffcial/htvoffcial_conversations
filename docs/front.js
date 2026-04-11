@@ -105,7 +105,7 @@ document.body.style.transition = 'background-color 0.6s';
 let lastScrollY = 0;
 let scrollTicking = false;
 let isFormVisible = false;
-const form = document.querySelector('.oniisan-form');
+const form = document.querySelector('#bg-flg-elm');
 const header = document.getElementById('header');
 
 function updateOnScroll() {
