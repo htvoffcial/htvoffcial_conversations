@@ -74,7 +74,7 @@ if (formEl) {
 }
 document.addEventListener('DOMContentLoaded', () => {
     const audio = document.querySelector('#audio-player');
-    const source = '/stream/playlist.m3u8';
+    const source = 'stream/playlist.m3u8';
 
     // HLS 読み込み
     if (Hls.isSupported()) {
@@ -145,11 +145,15 @@ window.addEventListener('scroll', () => {
 function calcSentenceTime(sentence) {
     let t = 0;
     for (let char of sentence) {
-        if (char.match(/[一-龯]/)) t += 0.2;       // 漢字
+        if (char.match(/[一-龯]/)) t += 0.16;       // 漢字
         else if (char.match(/[ぁ-ん]/)) t += 0.1; // ひらがな
         else if (char.match(/[ァ-ン]/)) t += 0.1; // カタカナ
-        else if (char.match(/[a-zA-Z]/)) t += 0.1; // 英字
-        else if (char.match(/[、。！？]/)) t += 0.2;    // 句読点
+        else if (char.match(/[a-zA-Z]/)) t += 0.05; // 英字
+        else if (char.match(/[\d]/)) t += 0.12;     // 数字
+        else if (char.match(/[、。！？()（）]/)) t += 0.5;    // 句読点
+        else if (char.match(/[-]/)) t += 0.8;     // ハイフン
+        else if (char.match(/[\n]/)) t += 0.5;    // 改行
+        else if (char.match(/[「」]/)) t += 0.2; // 鉤括弧
         else t += 0.1;                            // その他
     }
     return t;
@@ -158,7 +162,7 @@ function calcSentenceTime(sentence) {
 // ----------------------------
 // README 取得 → DISCUSS 部分抽出
 // ----------------------------
-fetch('/readme.md')
+fetch('readme.md')
     .then(response => response.text())
     .then(text => {
         const startMarker = '<!-- DISCUSS_COACH_START -->';
