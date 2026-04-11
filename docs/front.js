@@ -1,7 +1,18 @@
-document.querySelector('form').addEventListener('input', () => {
-    localStorage.setItem('title', document.getElementById('title-input').value);
-    localStorage.setItem('body', document.getElementById('body-input').value);
-});
+const formEl = document.querySelector('form');
+const titleInput = document.getElementById('title-input');
+const bodyInput = document.getElementById('body-input');
+
+let saveDraftTimer;
+if (formEl && titleInput && bodyInput) {
+    // localStorage 書き込みを間引いて入力時のブロッキングを減らす
+    formEl.addEventListener('input', () => {
+        clearTimeout(saveDraftTimer);
+        saveDraftTimer = setTimeout(() => {
+            localStorage.setItem('title', titleInput.value);
+            localStorage.setItem('body', bodyInput.value);
+        }, 150);
+    });
+}
 
 document.getElementById('privacychoice').addEventListener('click', () => {
     document.getElementById('popup-bg').style.display = 'block';
@@ -55,10 +66,12 @@ function loadAnalyticsScript() {
     }
 }
 loadAnalyticsScript();
-document.querySelector('form').addEventListener('submit', () => {
-    localStorage.removeItem('title');
-    localStorage.removeItem('body');
-});
+if (formEl) {
+    formEl.addEventListener('submit', () => {
+        localStorage.removeItem('title');
+        localStorage.removeItem('body');
+    });
+}
 document.addEventListener('DOMContentLoaded', () => {
     const audio = document.querySelector('#audio-player');
     const source = '/stream/playlist.m3u8';
@@ -87,29 +100,45 @@ document.addEventListener('DOMContentLoaded', () => {
 });*/
 //ガクガクしないように、スクロールする方向を判定する
 document.body.style.backgroundColor = 'rgb(115, 115, 165)';
+document.body.style.transition = 'background-color 0.6s';
 
-const lastScrollY = 0;
+let lastScrollY = 0;
+let scrollTicking = false;
+let isFormVisible = false;
 const form = document.querySelector('.oniisan-form');
-window.addEventListener('scroll', () => {
-    const header = document.getElementById('header');
-    if (window.scrollY > lastScrollY && window.scrollY > 50) {
-        header.style.top = '-100px';
-    } else {
-        header.style.top = '0';
-    }
-    //お兄さんお便りフォームが見えるようになったらbodyの背景色を#f0f0f0にフェードで徐々に変える
+const header = document.getElementById('header');
 
-    const formTop = form.offsetTop;
-    const formHeight = form.offsetHeight;
-    const windowBottom = window.scrollY + window.innerHeight;
-    if (windowBottom > formTop && window.scrollY < formTop + formHeight) {
-        document.body.style.transition = 'background-color 0.8s';
-        document.body.style.backgroundColor = '#f0f0f0';
-    } else {
-        document.body.style.transition = 'background-color 0.5s';
-        document.body.style.backgroundColor = 'rgb(115, 115, 165)';
+function updateOnScroll() {
+    const currentScrollY = window.scrollY;
+
+    if (header) {
+        if (currentScrollY > lastScrollY && currentScrollY > 50) {
+            header.style.top = '-100px';
+        } else {
+            header.style.top = '0';
+        }
     }
-});
+
+    // お兄さんお便りフォームが見える間だけ背景色を切り替える
+    if (form) {
+        const formRect = form.getBoundingClientRect();
+        const visibleNow = formRect.top < window.innerHeight && formRect.bottom > 0;
+        if (visibleNow !== isFormVisible) {
+            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : 'rgb(115, 115, 165)';
+            isFormVisible = visibleNow;
+        }
+    }
+
+    lastScrollY = currentScrollY;
+    scrollTicking = false;
+}
+
+window.addEventListener('scroll', () => {
+    if (!scrollTicking) {
+        requestAnimationFrame(updateOnScroll);
+        scrollTicking = true;
+    }
+}, { passive: true });
 // ----------------------------
 // 文字 → 時間換算（統一関数）
 // ----------------------------
@@ -127,7 +156,6 @@ function calcSentenceTime(sentence) {
 // ----------------------------
 // README 取得 → DISCUSS 部分抽出
 // ----------------------------
-const scrolledbyuser = false; // ユーザースクロールフラグ
 fetch('/readme.md')
     .then(response => response.text())
     .then(text => {
@@ -141,6 +169,13 @@ fetch('/readme.md')
 
         // 文の区切り強化（。！!？? 改行）
         const sentences = discussContent.split(/(?<=[。！!？?\n])/);
+        const sentenceDurations = sentences.map(calcSentenceTime);
+        const sentenceEndTimes = [];
+        let cumulativeTime = 0;
+        sentenceDurations.forEach(duration => {
+            cumulativeTime += duration;
+            sentenceEndTimes.push(cumulativeTime);
+        });
 
         // 表示（# と * を削除）
         sentences.forEach(sentence => {
@@ -160,38 +195,53 @@ fetch('/readme.md')
         sentences.forEach((sentence, index) => {
             const p = contentBox.children[index];
             p.addEventListener('click', () => {
-                let time = 0;
-                for (let i = 0; i < index; i++) {
-                    time += calcSentenceTime(sentences[i]);
-                }
-                audio.currentTime = time;
+                const startTime = index === 0 ? 0 : sentenceEndTimes[index - 1];
+                audio.currentTime = startTime;
             });
         });
 
         // ----------------------------
         // 再生時間 → 現在の文をハイライト
         // ----------------------------
-        audio.addEventListener('timeupdate', () => {
-            let t = 0;
-            for (let i = 0; i < sentences.length; i++) {
-                t += calcSentenceTime(sentences[i]);
-                if (audio.currentTime < t) {
-                    [...contentBox.children].forEach(p => p.classList.remove('nowct'));
-                    contentBox.children[i].classList.add('nowct');
-                    // 現在の文が見えるようにスクロール
-                    const pTop = contentBox.children[i].offsetTop;
-                    const pHeight = contentBox.children[i].offsetHeight;
-                    const boxTop = contentBox.scrollTop;
-                    const boxHeight = contentBox.offsetHeight;
-                    if (pTop < boxTop || pTop + pHeight > boxTop + boxHeight) {
-                        contentBox.scrollTo({
-                            top: pTop - boxHeight / 2 + pHeight / 2,
-                            behavior: 'smooth'
-                        });
-                    }
-                    break;
+        let activeSentenceIndex = -1;
 
+        function findSentenceIndex(currentTime) {
+            let low = 0;
+            let high = sentenceEndTimes.length - 1;
+            while (low <= high) {
+                const mid = Math.floor((low + high) / 2);
+                if (currentTime < sentenceEndTimes[mid]) {
+                    high = mid - 1;
+                } else {
+                    low = mid + 1;
                 }
+            }
+            return low;
+        }
+
+        audio.addEventListener('timeupdate', () => {
+            const nextIndex = findSentenceIndex(audio.currentTime);
+            if (nextIndex === activeSentenceIndex || nextIndex >= contentBox.children.length) {
+                return;
+            }
+
+            if (activeSentenceIndex >= 0) {
+                contentBox.children[activeSentenceIndex].classList.remove('nowct');
+            }
+            contentBox.children[nextIndex].classList.add('nowct');
+            activeSentenceIndex = nextIndex;
+
+            // 現在の文が見えるようにスクロール
+            const currentP = contentBox.children[nextIndex];
+            const pTop = currentP.offsetTop;
+            const pHeight = currentP.offsetHeight;
+            const boxTop = contentBox.scrollTop;
+            const boxHeight = contentBox.offsetHeight;
+            if (pTop < boxTop || pTop + pHeight > boxTop + boxHeight) {
+                contentBox.scrollTo({
+                    top: pTop - boxHeight / 2 + pHeight / 2,
+                    behavior: 'smooth'
+                });
             }
         });
     })
