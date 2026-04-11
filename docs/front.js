@@ -145,9 +145,11 @@ window.addEventListener('scroll', () => {
 function calcSentenceTime(sentence) {
     let t = 0;
     for (let char of sentence) {
-        if (char.match(/[一-龯]/)) t += 0.3;       // 漢字
-        else if (char.match(/[ぁ-ん]/)) t += 0.2; // ひらがな
-        else if (char.match(/[ァ-ン]/)) t += 0.2; // カタカナ
+        if (char.match(/[一-龯]/)) t += 0.2;       // 漢字
+        else if (char.match(/[ぁ-ん]/)) t += 0.1; // ひらがな
+        else if (char.match(/[ァ-ン]/)) t += 0.1; // カタカナ
+        else if (char.match(/[a-zA-Z]/)) t += 0.1; // 英字
+        else if (char.match(/[、。！？]/)) t += 0.2;    // 句読点
         else t += 0.1;                            // その他
     }
     return t;
