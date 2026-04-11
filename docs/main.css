@@ -155,3 +155,9 @@ select {
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 999;
 }
+/*モバイルの場合*/
+@media (max-width: 768px) {
+   #privacypopup {
+        width: 90%;
+    }
+}
