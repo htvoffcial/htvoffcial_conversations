@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+
     steps:
       - name: Checkout Conversations Repo
         uses: actions/checkout@v4
@@ -24,9 +25,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          pip install edge-tts
+          pip install azure-cognitiveservices-speech
 
       - name: Generate Speech and Convert to HLS
+        env:
+          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
+          AZURE_VOICE: ja-JP-KeitaNeural
         run: |
           # 1. README.md からテキスト抽出
           curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/README.md > readme.md
@@ -49,8 +54,8 @@ jobs:
           ")
           echo "Target Text: $TEXT"
 
-          # 2. 高音質MP3を生成
-          edge-tts --voice ja-JP-KeitaNeural --text "$TEXT" --write-media latest.mp3
+          # 2. Azure Speech (正規) で MP3 を生成
+          TTS_TEXT="$TEXT" TTS_OUT="latest.mp3" python3 scripts/ai-azure-tts.py
 
           # 3. ffmpeg で HLS (m3u8) に変換
           mkdir -p docs/stream
@@ -74,7 +79,6 @@ jobs:
         run: |
           git config --global user.name "RAdi0Bot♪"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          # docs フォルダ全体、latest.mp3、Archives を追加
           git add docs/ latest.mp3 Archives/
           git commit -m "Update HLS stream, archives, and docs/readme.md $(date +%Y-%m-%d)" || echo "No changes to commit"
           git push
