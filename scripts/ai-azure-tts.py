@@ -20,7 +20,10 @@ def main() -> int:
 
     speech_config = speechsdk.SpeechConfig(subscription=key, region=region)
     speech_config.speech_synthesis_voice_name = voice
-
+    
+    speech_config.set_speech_synthesis_output_format(
+        speechsdk.SpeechSynthesisOutputFormat.Audio16Khz128KBitRateMonoMp3
+    )
     # MP3 出力（必要ならビットレート等は後で調整可）
     audio_config = speechsdk.audio.AudioOutputConfig(filename=out_path)
     synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
