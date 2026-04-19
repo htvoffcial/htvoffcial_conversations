@@ -1,0 +1,64 @@
+name: Archive conversations.harutv.me (Internet Archive)
+
+on:
+  schedule:
+    # JST 11:08 = UTC 02:08
+    - cron: "8 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  savepagenow:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Skip if already ran today (marker exists)
+        id: skipcheck
+        run: |
+          set -euo pipefail
+          TODAY="$(date -u +%Y-%m-%d)"
+          MARKER="archive-markers/${TODAY}.txt"
+          echo "today=${TODAY}" >> "$GITHUB_OUTPUT"
+          echo "marker=${MARKER}" >> "$GITHUB_OUTPUT"
+
+          if [ -f "$MARKER" ]; then
+            echo "Already ran today (${TODAY}). Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+      - name: Save to Internet Archive (Save Page Now)
+        if: steps.skipcheck.outputs.skip != 'true'
+        env:
+          TARGET_URL: "https://conversations.harutv.me/"
+        run: |
+          set -euo pipefail
+          curl -sS -L \
+            -A "github-actions (htvoffcial_conversations scheduled archive)" \
+            "https://web.archive.org/save/${TARGET_URL}" \
+            -o response.txt
+          head -n 200 response.txt || true
+
+      - name: Create marker + commit
+        if: steps.skipcheck.outputs.skip != 'true'
+        run: |
+          set -euo pipefail
+          MARKER="${{ steps.skipcheck.outputs.marker }}"
+          mkdir -p "$(dirname "$MARKER")"
+          {
+            echo "saved_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "target=https://conversations.harutv.me/"
+            echo "run_id=${GITHUB_RUN_ID}"
+          } > "$MARKER"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$MARKER"
+          git commit -m "Archive marker ${{ steps.skipcheck.outputs.today }}" || exit 0
+          git push
