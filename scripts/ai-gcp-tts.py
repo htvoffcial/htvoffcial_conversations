@@ -34,7 +34,7 @@ def main() -> int:
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = cred_path
 
     # Standard 音声（例: ja-JP-Standard-A）
-    voice_name = os.environ.get("GCP_TTS_VOICE", "ja-JP-Standard-A")
+    voice_name = os.environ.get("GCP_TTS_VOICE", "ja-JP-Standard-C")
     # language code は voice_name からそれっぽく推定（ja-JP-Standard-A -> ja-JP）
     language_code = "-".join(voice_name.split("-")[0:2]) if "-" in voice_name else "ja-JP"
 
