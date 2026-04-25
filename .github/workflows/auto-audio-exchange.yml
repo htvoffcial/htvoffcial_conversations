@@ -42,7 +42,7 @@ jobs:
           import re
           try:
               content = open('readme.md').read()
-              pattern = r'(.*?)'
+              pattern = r'<!-- DISCUSS_COACH_START -->(.*?)<!-- DISCUSS_COACH_END -->'
               match = re.search(pattern, content, re.DOTALL)
               if match:
                   text = match.group(1).strip()
@@ -59,11 +59,11 @@ jobs:
 
           # 2. Google Cloud Text-to-Speech (Standard)でMP3生成
           TTS_TEXT="$TEXT" TTS_OUT="latest.mp3" python3 scripts/ai-gcp-tts.py
-          
+
           # mp3応答をOpus高効率高音質に圧縮
           ffmpeg -y -i latest.mp3 -c:a libopus -b:a 64k -vbr on latest.opus
           rm latest.mp3
-          
+
           # 3. ffmpeg で HLS (m3u8) に変換
           mkdir -p docs/stream
           ffmpeg -y -i latest.opus \
@@ -74,10 +74,14 @@ jobs:
             -hls_segment_filename "docs/stream/data%03d.ts" \
             docs/stream/playlist.m3u8
 
-          # 4. アーカイブ作成
+          # 4. アーカイブ作成（latest.opus が無ければスキップ）
           DIR="Archives/$(date +%Y-%m)"
           mkdir -p "$DIR"
-          cp latest.opus "$DIR/$(date +%d).opus"
+          if [ -f latest.opus ]; then
+            cp latest.opus "$DIR/$(date +%d).opus"
+          else
+            echo "latest.opus not found; skip archiving."
+          fi
 
           # 5. docs に README.md をコピーして保存
           cp readme.md docs/readme.md
