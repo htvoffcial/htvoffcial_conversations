@@ -5,7 +5,11 @@ on:
     # 日本時間 4:20 は UTC 19:20
     - cron: '20 19 * * *'
   workflow_dispatch:
-
+  
+concurrency:
+  group: daily-tts-main
+  cancel-in-progress: false
+  
 jobs:
   generate-tts:
     runs-on: ubuntu-latest
@@ -76,10 +80,14 @@ jobs:
           # 5. docs に README.md をコピーして保存
           cp readme.md docs/readme.md
 
-      - name: Commit and Push
-        run: |
-          git config --global user.name "RAdi0Bot♪"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/ latest.opus Archives/
-          git commit -m "Update HLS stream, archives, and docs/readme.md $(date +%Y-%m-%d)" || echo "No changes to commit"
-          git push
+          - name: Commit and Push
+            run: |
+              git config --global user.name "RAdi0Bot♪"
+              git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+              git add docs/ latest.opus Archives/
+              git commit -m "Update HLS stream, archives, and docs/readme.md $(date +%Y-%m-%d)" || echo "No changes to commit"
+
+              # non-fast-forward 対策: リモートの更新を取り込んでから push
+              git pull --rebase --autostash origin main
+              git push origin HEAD:main
