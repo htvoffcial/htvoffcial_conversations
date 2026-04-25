@@ -25,13 +25,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
-          pip install azure-cognitiveservices-speech
+          pip install google-cloud-texttospeech
 
       - name: Generate Speech and Convert to HLS
         env:
-          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
-          AZURE_SPEECH_REGION: ${{ secrets.AZURE_SPEECH_REGION }}
-          AZURE_VOICE: ja-JP-KeitaNeural
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          GCP_TTS_VOICE: ja-JP-Standard-A
         run: |
           # 1. README.md からテキスト抽出
           curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/README.md > readme.md
@@ -54,12 +53,14 @@ jobs:
           ")
           echo "Target Text: $TEXT"
 
-          # 2. Azure Speech (正規) で MP3 を生成
-          TTS_TEXT="$TEXT" TTS_OUT="latest.mp3" python3 scripts/ai-azure-tts.py
-
+          # 2. Google Cloud Text-to-Speech (Standard)でMP3生成
+          TTS_TEXT="$TEXT" TTS_OUT="latest.mp3" python3 scripts/ai-gcp-tts.py
+          # mp3応答をOpus高効率高音質に圧縮
+          ffmpeg -y -i latest.mp3 -c:a libopus -b:a 64k -vbr on latest.opus
+          rm latest.mp3
           # 3. ffmpeg で HLS (m3u8) に変換
           mkdir -p docs/stream
-          ffmpeg -y -i latest.mp3 \
+          ffmpeg -y -i latest.opus \
             -codec:a aac -b:a 128k \
             -f hls \
             -hls_time 10 \
@@ -70,7 +71,7 @@ jobs:
           # 4. アーカイブ作成
           DIR="Archives/$(date +%Y-%m)"
           mkdir -p "$DIR"
-          cp latest.mp3 "$DIR/$(date +%d).mp3"
+          cp latest.opus "$DIR/$(date +%d).opus"
 
           # 5. docs に README.md をコピーして保存
           cp readme.md docs/readme.md
@@ -79,6 +80,6 @@ jobs:
         run: |
           git config --global user.name "RAdi0Bot♪"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/ latest.mp3 Archives/
+          git add docs/ latest.opus Archives/
           git commit -m "Update HLS stream, archives, and docs/readme.md $(date +%Y-%m-%d)" || echo "No changes to commit"
           git push
