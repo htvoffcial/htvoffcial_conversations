@@ -34,7 +34,7 @@ jobs:
       - name: Generate Speech and Convert to HLS
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          GCP_TTS_VOICE: ja-JP-Standard-B
+          GCP_TTS_VOICE: ja-JP-Standard-C
         run: |
           # 1. README.md からテキスト抽出
           curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/README.md > readme.md
