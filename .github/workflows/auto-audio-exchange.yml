@@ -34,7 +34,7 @@ jobs:
       - name: Generate Speech and Convert to HLS
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          GCP_TTS_VOICE: ja-JP-Standard-A
+          GCP_TTS_VOICE: ja-JP-Standard-B
         run: |
           # 1. README.md からテキスト抽出
           curl -s https://raw.githubusercontent.com/htvoffcial/htvoffcial/main/README.md > readme.md
@@ -75,10 +75,17 @@ jobs:
             docs/stream/playlist.m3u8
 
           # 4. アーカイブ作成（latest.opus が無ければスキップ）
-          DIR="Archives/$(date +%Y-%m)"
+          # 4. アーカイブ作成（latest.opus が無ければスキップ）
+          # JST基準で前日の日付にしたい場合は TZ を Asia/Tokyo に固定
+          export TZ=Asia/Tokyo
+
+          YESTERDAY_YM=$(date -d "yesterday" +%Y-%m)
+          YESTERDAY_D=$(date -d "yesterday" +%d)
+
+          DIR="Archives/${YESTERDAY_YM}"
           mkdir -p "$DIR"
           if [ -f latest.opus ]; then
-            cp latest.opus "$DIR/$(date +%d).opus"
+            cp latest.opus "${DIR}/${YESTERDAY_D}.opus"
           else
             echo "latest.opus not found; skip archiving."
           fi
