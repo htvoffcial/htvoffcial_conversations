@@ -6,8 +6,9 @@ on:
     - cron: '20 19 * * *'
   workflow_dispatch:
 
+# server-ci-cd.yml (Sync docs to FTP) と直列化して、docs/ 更新 → FTP 同期の順序を保証する
 concurrency:
-  group: daily-tts-main
+  group: audio-then-ftp-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
