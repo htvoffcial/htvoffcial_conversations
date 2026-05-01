@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - 'docs/**'
+      - '/'
 
 # auto-audio-exchange.yml と直列化して、音声生成の後にも確実に同期されるようにする
 concurrency:
