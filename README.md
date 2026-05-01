@@ -59,7 +59,7 @@
 - Google Cloud Text-to-Speech（`google-cloud-texttospeech`）
 - ffmpeg（MP3 → Opus 変換 / HLS 変換）
 
-### フロントエンド（GitHub Pages / `docs/`）
+### フロントエンド（GitHub Pagesなどの静的ホスティングCI/CD / `docs/`）
 
 - HTML/CSS/JavaScript（素の構成）
 - HLS 再生：
