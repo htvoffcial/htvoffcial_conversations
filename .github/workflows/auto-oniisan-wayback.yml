@@ -16,17 +16,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Skip if already ran today (marker exists)
+      - name: Skip if already ran within last 1 day (marker exists)
         id: skipcheck
         run: |
           set -euo pipefail
           TODAY="$(date -u +%Y-%m-%d)"
+          YESTERDAY="$(date -u -d '1 day ago' +%Y-%m-%d)"
           MARKER="archive-markers/${TODAY}.txt"
+          YESTERDAY_MARKER="archive-markers/${YESTERDAY}.txt"
+
           echo "today=${TODAY}" >> "$GITHUB_OUTPUT"
           echo "marker=${MARKER}" >> "$GITHUB_OUTPUT"
 
-          if [ -f "$MARKER" ]; then
-            echo "Already ran today (${TODAY}). Skipping."
+          if [ -f "$MARKER" ] || [ -f "$YESTERDAY_MARKER" ]; then
+            echo "Already ran within last 1 day (${TODAY} or ${YESTERDAY}). Skipping."
             echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
