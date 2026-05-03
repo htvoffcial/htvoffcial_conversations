@@ -7,9 +7,9 @@ on:
       - main
 
 # auto-audio-exchange.yml と直列化して、音声生成の後にも確実に同期されるようにする
-concurrency:
-  group: audio-then-ftp-${{ github.ref }}
-  cancel-in-progress: false
+#concurrency:
+#  group: audio-then-ftp-${{ github.ref }}
+#  cancel-in-progress: false
 
 jobs:
   deploy:
