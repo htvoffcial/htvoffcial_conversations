@@ -261,6 +261,9 @@ window.addEventListener('resize', () => {
         h11.textContent = 'はるはる Conversations - with 体操のお兄さんラジオ';
     }
 });
-
+document.getElementById('text-size').addEventListener('change', function() {
+    document.body.style.fontSize = this.value;
+    localStorage.setItem('textSize', this.value);
+});
 //初期化
 window.dispatchEvent(new Event('resize'));
