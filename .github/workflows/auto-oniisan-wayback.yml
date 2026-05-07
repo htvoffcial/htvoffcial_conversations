@@ -16,10 +16,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Skip if already ran within last 1 day (marker exists)
-        id: skipcheck
+      - name: Check today's marker; purge yesterday; decide whether to archive
+        id: marker
+        shell: bash
         run: |
           set -euo pipefail
+
           TODAY="$(date -u +%Y-%m-%d)"
           YESTERDAY="$(date -u -d '1 day ago' +%Y-%m-%d)"
           MARKER="archive-markers/${TODAY}.txt"
@@ -27,17 +29,26 @@ jobs:
 
           echo "today=${TODAY}" >> "$GITHUB_OUTPUT"
           echo "marker=${MARKER}" >> "$GITHUB_OUTPUT"
+          echo "yesterday_marker=${YESTERDAY_MARKER}" >> "$GITHUB_OUTPUT"
 
-          if [ -f "$MARKER" ] || [ -f "$YESTERDAY_MARKER" ]; then
-            echo "Already ran within last 1 day (${TODAY} or ${YESTERDAY}). Skipping."
-            echo "skip=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ -f "$MARKER" ]; then
+            echo "Today's marker exists (${MARKER}). No archive needed."
+            echo "do_archive=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "No today's marker (${MARKER}). Will archive."
+            echo "do_archive=true" >> "$GITHUB_OUTPUT"
           fi
 
-          echo "skip=false" >> "$GITHUB_OUTPUT"
+          if [ -f "$YESTERDAY_MARKER" ]; then
+            echo "Will delete yesterday marker: ${YESTERDAY_MARKER}"
+            echo "delete_yesterday=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No yesterday marker to delete."
+            echo "delete_yesterday=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Save to Internet Archive (Save Page Now)
-        if: steps.skipcheck.outputs.skip != 'true'
+        if: steps.marker.outputs.do_archive == 'true'
         env:
           TARGET_URL: "https://conversations.harutv.me/"
         run: |
@@ -48,20 +59,38 @@ jobs:
             -o response.txt
           head -n 200 response.txt || true
 
-      - name: Create marker + commit
-        if: steps.skipcheck.outputs.skip != 'true'
+      - name: Update markers (create today's if archived; delete yesterday) + commit
+        if: steps.marker.outputs.do_archive == 'true' || steps.marker.outputs.delete_yesterday == 'true'
+        shell: bash
         run: |
           set -euo pipefail
-          MARKER="${{ steps.skipcheck.outputs.marker }}"
-          mkdir -p "$(dirname "$MARKER")"
-          {
-            echo "saved_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo "target=https://conversations.harutv.me/"
-            echo "run_id=${GITHUB_RUN_ID}"
-          } > "$MARKER"
+
+          TODAY="${{ steps.marker.outputs.today }}"
+          MARKER="${{ steps.marker.outputs.marker }}"
+          YESTERDAY_MARKER="${{ steps.marker.outputs.yesterday_marker }}"
+
+          if [ "${{ steps.marker.outputs.do_archive }}" = "true" ]; then
+            mkdir -p "$(dirname "$MARKER")"
+            {
+              echo "saved_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+              echo "target=https://conversations.harutv.me/"
+              echo "run_id=${GITHUB_RUN_ID}"
+            } > "$MARKER"
+            git add "$MARKER"
+          fi
+
+          if [ "${{ steps.marker.outputs.delete_yesterday }}" = "true" ]; then
+            git rm -f "$YESTERDAY_MARKER" || rm -f "$YESTERDAY_MARKER" || true
+          fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$MARKER"
-          git commit -m "Archive marker ${{ steps.skipcheck.outputs.today }}" || exit 0
+
+          # Commit only if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Archive marker ${TODAY}" || exit 0
           git push
