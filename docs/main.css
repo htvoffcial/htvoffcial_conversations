@@ -53,12 +53,13 @@ body {
     margin: 1em 0;
     line-height: 1.5em;
     font-size: 1.2em;
-    color: rgb(170, 174, 203);
+    color: #e3f8fa;
+    font-weight:bold;
 }
 
 #contentbox p.nowct {
-    color: rgb(199, 192, 229);
-    font-weight: bold;
+    color: #33818a;
+    font-weight: bolder;
 }
 
 .oniisan-form {
