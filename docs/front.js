@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
 });*/
 //ガクガクしないように、スクロールする方向を判定する
-document.body.style.backgroundColor = 'rgb(115, 115, 165)';
+document.body.style.backgroundColor = 'rgb(163, 246, 255)';
 document.body.style.transition = 'background-color 0.6s';
 
 let lastScrollY = 0;
@@ -124,7 +124,7 @@ function updateOnScroll() {
         const formRect = form.getBoundingClientRect();
         const visibleNow = formRect.top < window.innerHeight && formRect.bottom > 0;
         if (visibleNow !== isFormVisible) {
-            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : 'rgb(115, 115, 165)';
+            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : 'rgb(163, 246, 255)';
             isFormVisible = visibleNow;
         }
     }
