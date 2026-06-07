@@ -58,7 +58,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 .github/scripts/oniisan-song.py \
+          python3 scripts/oniisan-song.py \
             --input-text-file /tmp/oniisan-discuss.txt \
             --output /tmp/latest-oniisan-music.wav
           ffmpeg -y -i /tmp/latest-oniisan-music.wav -c:a libopus -b:a 64k -ac 1 -vbr on latest-oniisan-music.opus
