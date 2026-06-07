@@ -1,1 +1,78 @@
+name: Generate Oniisan Song
 
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "25 19 * * *"
+
+jobs:
+  oniisan-song:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Extract DISCUSS text
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import sys
+
+          readme_path = pathlib.Path("docs/readme.md")
+          if not readme_path.exists():
+            print("Error: Required file docs/readme.md not found. Workflow cannot proceed.", file=sys.stderr)
+            raise SystemExit(2)
+
+          content = readme_path.read_text(encoding="utf-8")
+          pattern = r"<!-- DISCUSS_COACH_START -->(.*?)<!-- DISCUSS_COACH_END -->"
+          match = re.search(pattern, content, re.DOTALL)
+          if not match:
+            print("DISCUSS markers not found", file=sys.stderr)
+            raise SystemExit(2)
+
+          text = match.group(1).strip()
+          if not text:
+            print("DISCUSS section is empty", file=sys.stderr)
+            raise SystemExit(2)
+
+          pathlib.Path("/tmp/oniisan-discuss.txt").write_text(text, encoding="utf-8")
+          PY
+
+      - name: Generate WAV and Opus
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/oniisan-song.py \
+            --input-text-file /tmp/oniisan-discuss.txt \
+            --output /tmp/latest-oniisan-music.wav
+          ffmpeg -y -i /tmp/latest-oniisan-music.wav -c:a libopus -b:a 64k -ac 1 -vbr on latest-oniisan-music.opus
+
+      - name: Commit generated opus
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add latest-oniisan-music.opus
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore: update latest oniisan song $(date -u +%Y-%m-%d)"
+          git push
