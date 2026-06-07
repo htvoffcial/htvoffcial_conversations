@@ -10,6 +10,7 @@ MAX_INPUT_CHARS = 200
 MAX_SECONDS = 30.0
 MIN_BPM = 60
 MAX_BPM = 120
+DEFAULT_TEXT = "おにいさん"
 
 DURATION_BY_CHAR_TYPE = {
     "hiragana": 0.25,
@@ -157,14 +158,20 @@ def load_text(args: argparse.Namespace) -> str:
             text = file.read()
     text = (text or "").strip()
     if not text:
-        text = "おにいさん"
+        text = DEFAULT_TEXT
     return text[:MAX_INPUT_CHARS]
+
+
+def validate_bpm(bpm: int) -> int:
+    if bpm < MIN_BPM or bpm > MAX_BPM:
+        raise ValueError(f"BPM must be between {MIN_BPM} and {MAX_BPM}")
+    return bpm
 
 
 def main() -> int:
     try:
         args = parse_args()
-        bpm = int(clamp(args.bpm, MIN_BPM, MAX_BPM))
+        bpm = validate_bpm(args.bpm)
         text = load_text(args)
 
         bar_seconds = (60.0 / bpm) * 4.0
@@ -207,7 +214,7 @@ def main() -> int:
         write_wav(args.output, mix)
         return 0
     except Exception as exc:
-        print(f"oniisan-song failed: {exc}", file=sys.stderr)
+        print(f"Error generating music file: {exc}", file=sys.stderr)
         return 1
 
 
