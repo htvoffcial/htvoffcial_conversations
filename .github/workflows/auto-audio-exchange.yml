@@ -70,7 +70,7 @@ jobs:
             -f hls \
             -hls_time 10 \
             -hls_list_size 0 \
-            -hls_segment_filename "docs/stream/data%03d.ts" \
+            -hls_segment_filename "docs/stream/%03d%Y%m%d.ts" \
             docs/stream/playlist.m3u8
 
           # 4. アーカイブ作成（latest.opus が無ければスキップ）
