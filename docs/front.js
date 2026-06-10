@@ -1,6 +1,6 @@
-const formEl = document.querySelector('form');
-const titleInput = document.getElementById('title-input');
-const bodyInput = document.getElementById('body-input');
+var formEl = document.querySelector('form');
+var titleInput = document.getElementById('title-input');
+var bodyInput = document.getElementById('body-input');
 
 let saveDraftTimer;
 if (formEl && titleInput && bodyInput) {
@@ -46,6 +46,22 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('text-size').value = savedTextSize;
         document.body.style.fontSize = savedTextSize;
     }
+    const audio = document.querySelector('#audio-player');
+    const source = 'stream/playlist.m3u8';
+
+    // HLS 読み込み
+    if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(source);
+        hls.attachMedia(audio);
+    } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+        audio.src = source;
+    }
+
+    // Plyr 初期化
+    const player = new Plyr(audio, {
+        controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'settings']
+    });
 });
 
 /*拒否状態でない場合に
@@ -72,24 +88,7 @@ if (formEl) {
         localStorage.removeItem('body');
     });
 }
-document.addEventListener('DOMContentLoaded', () => {
-    const audio = document.querySelector('#audio-player');
-    const source = 'stream/playlist.m3u8';
 
-    // HLS 読み込み
-    if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(source);
-        hls.attachMedia(audio);
-    } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
-        audio.src = source;
-    }
-
-    // Plyr 初期化
-    const player = new Plyr(audio, {
-        controls: ['play', 'progress', 'current-time', 'mute', 'volume', 'settings']
-    });
-});
 
 // スクロールでヘッダー隠す
 /*window.addEventListener('scroll', () => {
@@ -148,11 +147,11 @@ function calcSentenceTime(sentence) {
         if (char.match(/[一-龯]/)) t += 0.16;       // 漢字
         else if (char.match(/[ぁ-ん]/)) t += 0.1; // ひらがな
         else if (char.match(/[ァ-ン]/)) t += 0.1; // カタカナ
-        else if (char.match(/[a-zA-Z]/)) t += 0.05; // 英字
-        else if (char.match(/[\d]/)) t += 0.12;     // 数字
-        else if (char.match(/[、。！？()（）]/)) t += 0.5;    // 句読点
-        else if (char.match(/[-]/)) t += 0.8;     // ハイフン
-        else if (char.match(/[\n]/)) t += 0.5;    // 改行
+        else if (char.match(/[a-zA-Z]/)) t += 0.04; // 英字
+        else if (char.match(/[\d]/)) t += 0.1;     // 数字
+        else if (char.match(/[、。！？()（）]/)) t += 0.4;    // 句読点
+        else if (char.match(/[-]/)) t += 0.9;     // ハイフン
+        else if (char.match(/[\n]/)) t += 0.3;    // 改行
         else if (char.match(/[「」]/)) t += 0.2; // 鉤括弧
         else t += 0.1;                            // その他
     }
