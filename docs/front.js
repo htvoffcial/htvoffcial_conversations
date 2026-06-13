@@ -266,3 +266,5 @@ document.getElementById('text-size').addEventListener('change', function() {
 });
 //初期化
 window.dispatchEvent(new Event('resize'));
+// console.error の処理を何もしない空関数に置き換える
+console.error = function() {};
