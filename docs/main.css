@@ -163,3 +163,19 @@ select {
         width: 90%;
     }
 }
+
+.stmc {
+  position: absolute;
+  left: -9000px;
+  z-index: 999;
+  padding: 1em;
+  background-color: black;
+  color: white;
+  opacity: 0;
+}
+
+.stmc:focus {
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 1;
+}
