@@ -60,11 +60,13 @@ jobs:
           head -n 200 response.txt || true
       - name: Save to URLScan.io
         # if: steps.marker.outputs.do_archive == 'true'
+        env: 
+          URLSCANIO_KEY: ${{ secrets.URLSCANIO_KEY }}
         run: |
           set -euo pipefail
           curl -i -X GET \
           https://urlscan.io/api/v1/livescan/scanners/ \
-          -H 'api-key: $URLSCANIO_KEY'
+          -H "api-key: $URLSCANIO_KEY"
       - name: Update markers (create today's if archived; delete yesterday) + commit
         if: steps.marker.outputs.do_archive == 'true' || steps.marker.outputs.delete_yesterday == 'true'
         shell: bash
