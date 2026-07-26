@@ -59,7 +59,7 @@ jobs:
             -o response.txt
           head -n 200 response.txt || true
       - name: Save to URLScan.io
-        # if: steps.marker.outputs.do_archive == 'true'
+        if: steps.marker.outputs.do_archive == 'true'
         env: 
           URLSCANIO_KEY: ${{ secrets.URLSCANIO_KEY }}
         run: |
@@ -73,7 +73,7 @@ jobs:
             "url": "https://conversations.harutv.me/",
             "visibility": "public",
             "country": "jp",
-            "tags": ["taiso-no-oniisan", "iloveurlscan"]
+            "tags": ["taiso-no-oniisan"]
           }
           JSON
             
