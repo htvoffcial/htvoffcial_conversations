@@ -59,7 +59,7 @@ jobs:
             -o response.txt
           head -n 200 response.txt || true
       - name: Save to URLScan.io
-        if: steps.marker.outputs.do_archive == 'true'
+        # if: steps.marker.outputs.do_archive == 'true'
         run: |
           set -euo pipefail
           curl -i -X GET \
