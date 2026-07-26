@@ -63,7 +63,7 @@ jobs:
         env: 
           URLSCANIO_KEY: ${{ secrets.URLSCANIO_KEY }}
         run: |
-          -euo pipefail
+          set -euo pipefail
           curl -i -X POST \
           https://urlscan.io/api/v1/scan \
           -H "Content-Type: application/json" \
