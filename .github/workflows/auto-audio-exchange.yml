@@ -93,8 +93,8 @@ jobs:
 
       - name: Commit and Push
         run: |
-          git config --global user.name "RAdi0Bot♪"
-          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "htvoffcial"
+          git config --global user.email "61141911+htvoffcial@users.noreply.github.com"
 
           git add docs/ latest.opus Archives/
           git commit -m "Update HLS stream, archives, and docs/readme.md $(date +%Y-%m-%d)" || echo "No changes to commit"
