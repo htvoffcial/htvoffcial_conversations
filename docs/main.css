@@ -42,7 +42,7 @@ body {
     box-sizing: border-box;
     margin: 0 auto;
     padding: 20px;
-    background-color: #ed8282;
+    background-color: #330303;
     border-radius: 5px;
     height: 80svh;
 
@@ -53,7 +53,7 @@ body {
     margin: 1em 0;
     line-height: 1.5em;
     font-size: 1.2em;
-    color: #e9bebe;
+    color: #990909;
     font-weight:bold;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.05);
 }
