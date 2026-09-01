@@ -123,7 +123,7 @@ function updateOnScroll() {
         const formRect = form.getBoundingClientRect();
         const visibleNow = formRect.top < window.innerHeight && formRect.bottom > 0;
         if (visibleNow !== isFormVisible) {
-            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : 'rgb(163, 246, 255)';
+            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : '#a80c0c';
             isFormVisible = visibleNow;
         }
     }
