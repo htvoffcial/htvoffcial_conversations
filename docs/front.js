@@ -98,7 +98,7 @@ if (formEl) {
     
 });*/
 //ガクガクしないように、スクロールする方向を判定する
-document.body.style.backgroundColor = 'rgb(163, 246, 255)';
+document.body.style.backgroundColor = '#a80c0c';
 document.body.style.transition = 'background-color 0.6s';
 
 let lastScrollY = 0;
