@@ -98,7 +98,7 @@ if (formEl) {
     
 });*/
 //ガクガクしないように、スクロールする方向を判定する
-document.body.style.backgroundColor = '#a80c0c';
+document.body.style.backgroundColor = '#587bb0';
 document.body.style.transition = 'background-color 0.6s';
 
 let lastScrollY = 0;
@@ -123,7 +123,7 @@ function updateOnScroll() {
         const formRect = form.getBoundingClientRect();
         const visibleNow = formRect.top < window.innerHeight && formRect.bottom > 0;
         if (visibleNow !== isFormVisible) {
-            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : '#a80c0c';
+            document.body.style.backgroundColor = visibleNow ? '#f0f0f0' : '#587bb0';
             isFormVisible = visibleNow;
         }
     }
