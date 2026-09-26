@@ -1,7 +1,7 @@
 name: Concat Monthly Audio
 
 on:
-  workflow_dispatch: # 手動実行用
+  workflow_dispatch:
 
 jobs:
   concat-audio:
@@ -17,48 +17,171 @@ jobs:
           sudo apt-get install -y ffmpeg
 
       - name: Concatenate Audio Files Monthly
+        shell: bash
         run: |
-          # 出力先ディレクトリを作成
+          set -Eeuo pipefail
+
           mkdir -p concat
 
-          # Archives 配下の各年月フォルダ（例: Archives/2026-04）を処理
+          # Archives/YYYY-MM を順番に処理
+          shopt -s nullglob
+
           for dir in Archives/[0-9][0-9][0-9][0-9]-[0-9][0-9]; do
-            if [ -d "$dir" ]; then
-              # フォルダ名から「MM月」を取得（例: 2026-04 -> 04月）
-              folder_name=$(basename "$dir")
-              month_num=$(echo "$folder_name" | cut -d'-' -f2)
-              output_file="concat/${month_num}月のお兄さん.mp3"
+            [[ -d "$dir" ]] || continue
 
-              echo "Processing $dir -> $output_file"
+            folder_name="$(basename "$dir")"
 
-              # 一時ファイルリストの作成
-              file_list_txt="file_list.txt"
-              > "$file_list_txt"
+            # YYYY-MM
+            year="${folder_name%-*}"
+            month_num="${folder_name#*-}"
 
-              # アルファベット/数字昇順で .mp3 と .opus ファイルを抽出
-              find "$dir" -maxdepth 1 -type f \( -name "*.mp3" -o -name "*.opus" \) | sort | while read -r file; do
-                # ffmpeg concat demuxer 用のエスケープ処理をして書き込み
-                echo "file '$PWD/$file'" >> "$file_list_txt"
-              done
+            # 年を含めておくと、2026-04 と 2027-04 が上書きされない
+            output_file="concat/${year}-${month_num}月のお兄さん.mp3"
 
-              # ファイルが存在する場合のみ FFmpeg で結合・MP3変換
-              if [ -s "$file_list_txt" ]; then
-                ffmpeg -f concat -safe 0 -i "$file_list_txt" -vn -ar 44100 -ac 2 -b:a 192k "$output_file" -y
-                echo "Successfully created $output_file"
-              else
-                echo "No audio files found in $dir"
-              fi
+            echo "========================================"
+            echo "Processing: $dir"
+            echo "Output:     $output_file"
+            echo "========================================"
 
-              rm -f "$file_list_txt"
+            # 月ごとの一時ディレクトリ
+            work_dir="$(mktemp -d)"
+
+            cleanup() {
+              rm -rf "$work_dir"
+            }
+            trap cleanup EXIT
+
+            # ------------------------------------------------------------
+            # 1. 入力ファイルを取得
+            #    MP3 / Opus を対象
+            #    find の -print0 でファイル名を安全に扱う
+            # ------------------------------------------------------------
+
+            mapfile -d '' input_files < <(
+              find "$dir" \
+                -maxdepth 1 \
+                -type f \
+                \( -iname '*.mp3' -o -iname '*.opus' \) \
+                -print0 |
+              sort -z
+            )
+
+            if (( ${#input_files[@]} == 0 )); then
+              echo "No audio files found in $dir"
+              continue
             fi
+
+            echo "Found ${#input_files[@]} audio files."
+
+            # ------------------------------------------------------------
+            # 2. 全ファイルを同じ WAV フォーマットへ正規化
+            #
+            #    44.1kHz / stereo / signed 16-bit PCM
+            #
+            #    これで MP3 / Opus の混在による concat 問題を排除
+            # ------------------------------------------------------------
+
+            concat_list="$work_dir/concat.txt"
+            : > "$concat_list"
+
+            index=0
+
+            for input_file in "${input_files[@]}"; do
+              index=$((index + 1))
+
+              normalized_file="$work_dir/$(printf '%06d' "$index").wav"
+
+              echo
+              echo "[$index/${#input_files[@]}]"
+              echo "Input: $input_file"
+              echo "Normalize: $normalized_file"
+
+              ffmpeg \
+                -hide_banner \
+                -loglevel warning \
+                -y \
+                -i "$input_file" \
+                -map 0:a:0 \
+                -vn \
+                -sn \
+                -dn \
+                -ar 44100 \
+                -ac 2 \
+                -c:a pcm_s16le \
+                "$normalized_file"
+
+              # ffconcat のファイル名は絶対パスにして安全に書く
+              # WAV名はこちらで生成しているので特殊文字は含まれない
+              printf "file '%s'\n" "$normalized_file" >> "$concat_list"
+            done
+
+            # ------------------------------------------------------------
+            # 3. WAVを結合してMP3へ変換
+            #
+            #    入力は全て同一フォーマットなので
+            #    concat demuxer が安定して動作する
+            # ------------------------------------------------------------
+
+            echo
+            echo "Concatenating normalized audio..."
+
+            ffmpeg \
+              -hide_banner \
+              -loglevel warning \
+              -y \
+              -f concat \
+              -safe 0 \
+              -i "$concat_list" \
+              -map 0:a:0 \
+              -vn \
+              -ar 44100 \
+              -ac 2 \
+              -c:a libmp3lame \
+              -b:a 192k \
+              -write_xing 1 \
+              -id3v2_version 3 \
+              "$output_file"
+
+            # ------------------------------------------------------------
+            # 4. 出力ファイルの簡易チェック
+            # ------------------------------------------------------------
+
+            if [[ ! -s "$output_file" ]]; then
+              echo "ERROR: Output file was not created: $output_file"
+              exit 1
+            fi
+
+            echo
+            echo "Successfully created:"
+            ls -lh "$output_file"
+
+            echo
+            echo "Output information:"
+            ffprobe \
+              -hide_banner \
+              -v error \
+              -show_entries format=duration,size:stream=codec_name,sample_rate,channels \
+              -of default=noprint_wrappers=1 \
+              "$output_file"
+
+            # この月の一時ファイルを削除
+            rm -rf "$work_dir"
+            trap - EXIT
+
+            echo
+            echo "Finished: $dir"
+            echo
           done
 
       - name: Commit and push concatenated audio files
         run: |
+          set -Eeuo pipefail
+
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           git add concat/
+
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
