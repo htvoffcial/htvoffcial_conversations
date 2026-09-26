@@ -1,0 +1,67 @@
+name: Concat Monthly Audio
+
+on:
+  workflow_dispatch: # 手動実行用
+
+jobs:
+  concat-audio:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Concatenate Audio Files Monthly
+        run: |
+          # 出力先ディレクトリを作成
+          mkdir -p concat
+
+          # Archives 配下の各年月フォルダ（例: Archives/2026-04）を処理
+          for dir in Archives/[0-9][0-9][0-9][0-9]-[0-9][0-9]; do
+            if [ -d "$dir" ]; then
+              # フォルダ名から「MM月」を取得（例: 2026-04 -> 04月）
+              folder_name=$(basename "$dir")
+              month_num=$(echo "$folder_name" | cut -d'-' -f2)
+              output_file="concat/${month_num}月のお兄さん.mp3"
+
+              echo "Processing $dir -> $output_file"
+
+              # 一時ファイルリストの作成
+              file_list_txt="file_list.txt"
+              > "$file_list_txt"
+
+              # アルファベット/数字昇順で .mp3 と .opus ファイルを抽出
+              find "$dir" -maxdepth 1 -type f \( -name "*.mp3" -o -name "*.opus" \) | sort | while read -r file; do
+                # ffmpeg concat demuxer 用のエスケープ処理をして書き込み
+                echo "file '$PWD/$file'" >> "$file_list_txt"
+              done
+
+              # ファイルが存在する場合のみ FFmpeg で結合・MP3変換
+              if [ -s "$file_list_txt" ]; then
+                ffmpeg -f concat -safe 0 -i "$file_list_txt" -vn -ar 44100 -ac 2 -b:a 192k "$output_file" -y
+                echo "Successfully created $output_file"
+              else
+                echo "No audio files found in $dir"
+              fi
+
+              rm -f "$file_list_txt"
+            fi
+          done
+
+      - name: Commit and push concatenated audio files
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add concat/
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: auto-concat monthly audio files"
+            git push
+          fi
