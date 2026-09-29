@@ -1,3 +1,5 @@
+[![GitHubTree](https://img.shields.io/badge/GitHubTree-htvoffcial__conversations-blue?style=flat-square)](https://githubtree.mgks.dev/repo/htvoffcial/htvoffcial_conversations/main/?ref=badge)
+
 # htvoffcial_conversations
 
 `htvoffcial/htvoffcial` の GitHub Discussions 相当のテキスト（`README.md` 内の `<!-- DISCUSS_COACH_START -->...<!-- DISCUSS_COACH_END -->` 区間）を元に、
