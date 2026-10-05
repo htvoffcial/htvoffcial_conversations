@@ -2,10 +2,11 @@ name: Concat Monthly Audio
 
 on:
   workflow_dispatch:
-
-# GitHub Actions にリポジトリへの書き込み権限を与える
-permissions:
-  contents: write
+    inputs:
+      target_month:
+        description: '処理する月 (例: 2026-10)'
+        required: true
+        type: string
 
 jobs:
   concat:
@@ -17,9 +18,7 @@ jobs:
       # --------------------------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          fetch-depth: 0
+        # Artifactにアップロードするだけであれば fetch-depth 等は不要なので最小構成にします
 
       # --------------------------------------------------
       # 2. Install ffmpeg
@@ -30,199 +29,169 @@ jobs:
           sudo apt-get install -y ffmpeg
 
       # --------------------------------------------------
-      # 3. Concat monthly audio
+      # 3. Concat target month audio
       # --------------------------------------------------
-      - name: Concat monthly audio files
+      - name: Concat audio files for ${{ inputs.target_month }}
         shell: bash
         run: |
           set -Eeuo pipefail
 
           shopt -s nullglob
 
+          TARGET_MONTH="${{ inputs.target_month }}"
           ARCHIVES_DIR="Archives"
           OUTPUT_DIR="concat"
+          month_dir="$ARCHIVES_DIR/$TARGET_MONTH"
+
+          # 対象月のディレクトリが存在するかチェック
+          if [[ ! -d "$month_dir" ]]; then
+            echo "Error: Directory not found: $month_dir"
+            exit 1
+          fi
 
           mkdir -p "$OUTPUT_DIR"
 
-          # Archives/YYYY-MM を処理
-          for month_dir in "$ARCHIVES_DIR"/????-??; do
+          echo ""
+          echo "========================================"
+          echo "Processing: $month_dir"
+          echo "========================================"
 
-            # ディレクトリでなければスキップ
-            [[ -d "$month_dir" ]] || continue
+          # ------------------------------------------------
+          # 入力ファイルを安全に取得
+          # ------------------------------------------------
+          mapfile -d '' input_files < <(
+            find "$month_dir" -type f \
+              \( -iname '*.mp3' -o -iname '*.opus' \) \
+              -print0 | sort -z
+          )
 
-            month="$(basename "$month_dir")"
+          if (( ${#input_files[@]} == 0 )); then
+            echo "Error: No audio files found in $month_dir"
+            exit 1
+          fi
 
-            echo ""
-            echo "========================================"
-            echo "Processing: $month_dir"
-            echo "========================================"
+          echo "Found ${#input_files[@]} audio files."
 
-            # ------------------------------------------------
-            # 入力ファイルを安全に取得
-            # MP3 / Opus の両方に対応
-            # ------------------------------------------------
-            mapfile -d '' input_files < <(
-              find "$month_dir" -type f \
-                \( -iname '*.mp3' -o -iname '*.opus' \) \
-                -print0 | sort -z
-            )
+          # ------------------------------------------------
+          # 一時ディレクトリ
+          # ------------------------------------------------
+          tmp_dir="$(mktemp -d)"
 
-            if (( ${#input_files[@]} == 0 )); then
-              echo "No audio files found: $month_dir"
-              continue
-            fi
+          cleanup() {
+            rm -rf "$tmp_dir"
+          }
 
-            echo "Found ${#input_files[@]} audio files."
+          trap cleanup EXIT
 
-            # ------------------------------------------------
-            # 一時ディレクトリ
-            # ------------------------------------------------
-            tmp_dir="$(mktemp -d)"
+          wav_dir="$tmp_dir/wav"
+          mkdir -p "$wav_dir"
 
-            cleanup() {
-              rm -rf "$tmp_dir"
-            }
+          # ------------------------------------------------
+          # すべて WAV に正規化
+          # ------------------------------------------------
+          echo ""
+          echo "Normalizing audio files..."
 
-            trap cleanup EXIT
+          wav_index=0
 
-            wav_dir="$tmp_dir/wav"
-            mkdir -p "$wav_dir"
+          for input_file in "${input_files[@]}"; do
+            wav_file="$wav_dir/$(printf '%06d.wav' "$wav_index")"
 
-            # ------------------------------------------------
-            # すべて WAV に正規化
-            #
-            # 44.1kHz
-            # stereo
-            # PCM signed 16-bit
-            #
-            # これで MP3 / Opus の codec 差を消す
-            # ------------------------------------------------
-            echo ""
-            echo "Normalizing audio files..."
-
-            wav_index=0
-
-            for input_file in "${input_files[@]}"; do
-
-              wav_file="$wav_dir/$(printf '%06d.wav' "$wav_index")"
-
-              echo ""
-              echo "Input : $input_file"
-              echo "Output: $wav_file"
-
-              ffmpeg \
-                -hide_banner \
-                -loglevel warning \
-                -y \
-                -i "$input_file" \
-                -vn \
-                -ar 44100 \
-                -ac 2 \
-                -c:a pcm_s16le \
-                "$wav_file"
-
-              wav_index=$((wav_index + 1))
-            done
-
-            # ------------------------------------------------
-            # concat 用リスト作成
-            # WAVなのでファイル名は全部安全
-            # ------------------------------------------------
-            file_list="$tmp_dir/files.txt"
-
-            : > "$file_list"
-
-            for wav_file in "$wav_dir"/*.wav; do
-              printf "file '%s'\n" "$wav_file" >> "$file_list"
-            done
-
-            # ------------------------------------------------
-            # WAVを結合
-            # ------------------------------------------------
-            combined_wav="$tmp_dir/combined.wav"
-
-            echo ""
-            echo "Concatenating WAV files..."
+            echo "Input : $input_file -> Output: $wav_file"
 
             ffmpeg \
               -hide_banner \
               -loglevel warning \
               -y \
-              -f concat \
-              -safe 0 \
-              -i "$file_list" \
-              -c copy \
-              "$combined_wav"
-
-            # ------------------------------------------------
-            # 最終MP3
-            #
-            # 年月をファイル名に入れることで
-            # 2026-04 と 2027-04 の衝突を防止
-            # ------------------------------------------------
-            output_file="$OUTPUT_DIR/${month}月のお便りさん.mp3"
-
-            echo ""
-            echo "Creating MP3:"
-            echo "$output_file"
-
-            ffmpeg \
-              -hide_banner \
-              -loglevel warning \
-              -y \
-              -i "$combined_wav" \
+              -i "$input_file" \
               -vn \
               -ar 44100 \
               -ac 2 \
-              -c:a libmp3lame \
-              -b:a 192k \
-              -write_xing 1 \
-              -id3v2_version 3 \
-              "$output_file"
+              -c:a pcm_s16le \
+              "$wav_file"
 
-            # ------------------------------------------------
-            # 出力ファイルを検証
-            # ------------------------------------------------
-            echo ""
-            echo "Validating:"
-            echo "$output_file"
-
-            ffprobe \
-              -v error \
-              -select_streams a:0 \
-              -show_entries stream=codec_name,sample_rate,channels,duration \
-              -show_entries format=size \
-              -of default=noprint_wrappers=1 \
-              "$output_file"
-
-            echo ""
-            echo "Finished: $month_dir"
-
-            # trap の tmp_dir を次の月でも使えるように解除
-            rm -rf "$tmp_dir"
-            trap - EXIT
-
+            wav_index=$((wav_index + 1))
           done
 
+          # ------------------------------------------------
+          # concat 用リスト作成
+          # ------------------------------------------------
+          file_list="$tmp_dir/files.txt"
+
+          : > "$file_list"
+
+          for wav_file in "$wav_dir"/*.wav; do
+            printf "file '%s'\n" "$wav_file" >> "$file_list"
+          done
+
+          # ------------------------------------------------
+          # WAVを結合
+          # ------------------------------------------------
+          combined_wav="$tmp_dir/combined.wav"
+
+          echo ""
+          echo "Concatenating WAV files..."
+
+          ffmpeg \
+            -hide_banner \
+            -loglevel warning \
+            -y \
+            -f concat \
+            -safe 0 \
+            -i "$file_list" \
+            -c copy \
+            "$combined_wav"
+
+          # ------------------------------------------------
+          # 最終MP3
+          # ------------------------------------------------
+          output_file="$OUTPUT_DIR/${TARGET_MONTH}月のお便りさん.mp3"
+
+          echo ""
+          echo "Creating MP3:"
+          echo "$output_file"
+
+          ffmpeg \
+            -hide_banner \
+            -loglevel warning \
+            -y \
+            -i "$combined_wav" \
+            -vn \
+            -ar 44100 \
+            -ac 2 \
+            -c:a libmp3lame \
+            -b:a 192k \
+            -write_xing 1 \
+            -id3v2_version 3 \
+            "$output_file"
+
+          # ------------------------------------------------
+          # 出力ファイルを検証
+          # ------------------------------------------------
+          echo ""
+          echo "Validating:"
+          echo "$output_file"
+
+          ffprobe \
+            -v error \
+            -select_streams a:0 \
+            -show_entries stream=codec_name,sample_rate,channels,duration \
+            -show_entries format=size \
+            -of default=noprint_wrappers=1 \
+            "$output_file"
+
+          echo ""
+          echo "Finished: $TARGET_MONTH"
+
       # --------------------------------------------------
-      # 4. Commit & Push
+      # 4. Upload to Artifacts
       # --------------------------------------------------
-      - name: Commit and push concatenated audio files
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add concat/
-
-          # 変更がなければ正常終了
-          if git diff --cached --quiet; then
-            echo "No changes to commit."
-            exit 0
-          fi
-
-          git commit -m "chore: auto-concat monthly audio files"
-
-          git push
+      - name: Upload concatenated audio artifact
+        uses: actions/upload-artifact@v4
+        with:
+          # Artifact名（GitHub上でダウンロードする際のzip名になります）
+          name: Audio-${{ inputs.target_month }}
+          # アップロードするファイルのパス
+          path: concat/${{ inputs.target_month }}月のお便りさん.mp3
+          # Artifactの保存期間（任意で調整してください。デフォルトは90日です）
+          retention-days: 1
