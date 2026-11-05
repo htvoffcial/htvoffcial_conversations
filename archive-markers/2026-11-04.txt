@@ -1,3 +1,0 @@
-saved_at_utc=2026-11-04T09:00:36Z
-target=https://conversations.harutv.me/
-run_id=41803820106
